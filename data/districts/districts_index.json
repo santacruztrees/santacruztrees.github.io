@@ -1,0 +1,41 @@
+{
+  "total_trees": 49957,
+  "total_districts": 5,
+  "districts": [
+    {
+      "code": "01",
+      "name": "ANAGA",
+      "filename": "district_01_ANAGA.geojson",
+      "tree_count": 5323,
+      "size_mb": 1.152482032775879
+    },
+    {
+      "code": "02",
+      "name": "CENTRO - IFARA",
+      "filename": "district_02_CENTRO_-_IFARA.geojson",
+      "tree_count": 6274,
+      "size_mb": 1.3951120376586914
+    },
+    {
+      "code": "03",
+      "name": "OFRA - COSTA SUR",
+      "filename": "district_03_OFRA_-_COSTA_SUR.geojson",
+      "tree_count": 11403,
+      "size_mb": 2.5787057876586914
+    },
+    {
+      "code": "04",
+      "name": "SALUD - LA SALLE",
+      "filename": "district_04_SALUD_-_LA_SALLE.geojson",
+      "tree_count": 14499,
+      "size_mb": 3.260801315307617
+    },
+    {
+      "code": "05",
+      "name": "SUROESTE",
+      "filename": "district_05_SUROESTE.geojson",
+      "tree_count": 12458,
+      "size_mb": 2.7104721069335938
+    }
+  ]
+}

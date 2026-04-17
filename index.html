@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <!-- SEO Meta Tags -->
+  <title>Santacruztrees - Mapa Interactivo de los Árboles de Santa Cruz de Tenerife</title>
+  <meta name="description" content="Explora el mapa interactivo de los árboles de Santa Cruz de Tenerife. Descubre especies, ubicaciones y datos de cada árbol de la ciudad. Datos del Ayuntamiento de Santa Cruz de Tenerife.">
+  <meta name="keywords" content="árboles Santa Cruz de Tenerife, mapa árboles Tenerife, vegetación Santa Cruz, especies árboles Tenerife, arbolado urbano Santa Cruz, datos abiertos Tenerife">
+  <meta name="author" content="Mario Guinda">
+  <link rel="canonical" href="https://santacruztrees.github.io/">
+  
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://santacruztrees.github.io/">
+  <meta property="og:title" content="Santacruztrees - Mapa Interactivo de los Árboles de Santa Cruz de Tenerife">
+  <meta property="og:description" content="Explora el mapa interactivo de los árboles de Santa Cruz de Tenerife. Descubre especies, ubicaciones y datos de cada árbol.">
+  <meta property="og:image" content="https://santacruztrees.github.io/resources/page-preview.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="es_ES">
+  
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:url" content="https://santacruztrees.github.io/">
+  <meta name="twitter:title" content="Santacruztrees - Mapa Interactivo de los Árboles de Santa Cruz de Tenerife">
+  <meta name="twitter:description" content="Explora el mapa interactivo de los árboles de Santa Cruz de Tenerife.">
+  <meta name="twitter:image" content="https://santacruztrees.github.io/resources/page-preview.png">
+  
+  <!-- Favicon -->
+  <link rel="shortcut icon" href="/favicon.ico" />
+  <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+  <link rel="manifest" href="/site.webmanifest" />
+  <meta name="theme-color" content="#4CAF50">
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  
+  <!-- Leaflet MarkerCluster CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+  
+  <!-- Leaflet Locate Control CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.locatecontrol@0.85.1/dist/L.Control.Locate.min.css" />
+  
+  <!-- Cookie Consent CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orestbida/cookieconsent@3.0.1/dist/cookieconsent.css">
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    }
+
+    #map { 
+      height: 100vh; 
+      width: 100vw;
+    }
+
+    /* Loading indicator */
+    #loading-overlay {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255, 255, 255, 0.95);
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 15px;
+      padding: 12px 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      z-index: 1000;
+      transition: opacity 0.3s;
+    }
+
+    #loading-overlay.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .spinner {
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #4CAF50;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      animation: spin 1s linear infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    #loading-text {
+      font-size: 14px;
+      color: #333;
+      white-space: nowrap;
+    }
+
+    #loading-progress {
+      font-size: 12px;
+      color: #666;
+      white-space: nowrap;
+    }
+
+    .loading-content {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    /* Info panel */
+    .info-panel {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      z-index: 1000;
+      max-width: 250px;
+    }
+
+    .info-panel h3 {
+      margin: 0 0 10px 0;
+      font-size: 18px;
+      color: #2c5f2d;
+    }
+
+    .info-panel p {
+      margin: 5px 0;
+      font-size: 14px;
+      color: #666;
+    }
+
+    .info-panel .close-btn {
+      position: absolute;
+      top: 5px;
+      right: 10px;
+      background: none;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      color: #999;
+    }
+
+    .info-panel .close-btn:hover {
+      color: #333;
+    }
+
+    /* Error message */
+    .error-message {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #f44336;
+      color: white;
+      padding: 20px 30px;
+      border-radius: 8px;
+      z-index: 10000;
+      max-width: 400px;
+      text-align: center;
+    }
+
+    .leaflet-popup-content {
+      margin: 12px;
+      min-width: 220px;
+      max-width: 280px;
+    }
+
+    .tree-info {
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    .tree-info strong {
+      color: #2c5f2d;
+      font-weight: 600;
+    }
+
+    .tree-info .tree-species {
+      font-size: 16px;
+      font-weight: 600;
+      color: #2c5f2d;
+      margin-bottom: 4px;
+      display: block;
+    }
+
+    .tree-info .tree-common-name {
+      font-size: 13px;
+      color: #666;
+      font-style: italic;
+      margin-bottom: 12px;
+      display: block;
+    }
+
+    .tree-info .tree-details {
+      margin: 12px 0;
+      padding-top: 12px;
+      border-top: 1px solid #e0e0e0;
+    }
+
+    .tree-info .tree-details-item {
+      margin: 6px 0;
+      font-size: 13px;
+    }
+
+    .tree-info .tree-location {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #e0e0e0;
+      font-size: 12px;
+      color: #666;
+    }
+
+    .tree-info .tree-location-item {
+      margin: 4px 0;
+    }
+
+    .tree-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
+      flex-wrap: wrap;
+    }
+
+    .street-view-button,
+    .images-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #4CAF50;
+      color: white !important;
+      padding: 10px 16px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 700;
+      transition: all 0.2s ease;
+      flex: 1;
+      min-width: 0;
+      text-align: center;
+      box-shadow: 0 2px 4px rgba(76, 175, 80, 0.2);
+      min-height: 44px;
+      cursor: pointer;
+      border: none;
+    }
+
+    .street-view-button:hover,
+    .images-button:hover {
+      background-color: #45a049;
+      color: white !important;
+      text-decoration: none;
+      box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
+      transform: translateY(-1px);
+    }
+
+    .street-view-button:active,
+    .images-button:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 4px rgba(76, 175, 80, 0.2);
+    }
+
+    .street-view-button:visited,
+    .images-button:visited {
+      color: white !important;
+    }
+
+    .street-view-button:focus,
+    .images-button:focus {
+      outline: 2px solid #4CAF50;
+      outline-offset: 2px;
+    }
+
+    /* Optimize leaflet canvas rendering */
+    .leaflet-marker-icon,
+    .leaflet-marker-shadow {
+      transition: none !important;
+    }
+
+    /* Better cluster styling */
+    .marker-cluster {
+      background-clip: padding-box;
+      border-radius: 20px;
+    }
+
+    .marker-cluster div {
+      width: 30px;
+      height: 30px;
+      margin-left: 5px;
+      margin-top: 5px;
+      text-align: center;
+      border-radius: 15px;
+      font: 12px "Helvetica Neue", Arial, Helvetica, sans-serif;
+      font-weight: bold;
+      line-height: 30px;
+    }
+
+    /* Performance indicator */
+    #performance-indicator {
+      position: absolute;
+      top: 10px;
+      left: 50px;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 11px;
+      z-index: 1000;
+      box-shadow: 0 1px 5px rgba(0,0,0,0.2);
+      display: none;
+    }
+
+    #performance-indicator.show {
+      display: block;
+    }
+
+    #performance-indicator .fps {
+      color: #4CAF50;
+      font-weight: bold;
+    }
+
+    /* Info button */
+    #info-button {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 40px;
+      height: 40px;
+      background: white;
+      border: none;
+      border-radius: 50%;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      z-index: 1000;
+      transition: background-color 0.2s;
+    }
+
+    #info-button:hover {
+      background-color: #f5f5f5;
+    }
+
+    #info-button img {
+      width: 24px;
+      height: 24px;
+    }
+
+    /* Info popup */
+    #info-popup {
+      position: fixed;
+      bottom: 65px;
+      right: 20px;
+      background: white;
+      padding: 15px 18px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      z-index: 1000;
+      display: none;
+      min-width: 200px;
+    }
+
+    #info-popup.show {
+      display: block;
+    }
+
+    #info-popup p {
+      margin: 0 0 10px 0;
+      font-size: 14px;
+      color: #333;
+    }
+
+    #info-popup p:last-child {
+      margin-bottom: 0;
+    }
+
+    #info-popup a {
+      color: #4CAF50;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    #info-popup a:hover {
+      text-decoration: underline;
+    }
+
+    /* Cookie consent customization */
+    #cc-main {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif !important;
+    }
+
+    #cc-main .cm__btn {
+      border-radius: 6px !important;
+    }
+
+    #cc-main .cm__btn--primary {
+      background: #4CAF50 !important;
+      border-color: #4CAF50 !important;
+    }
+
+    #cc-main .cm__btn--primary:hover {
+      background: #45a049 !important;
+      border-color: #45a049 !important;
+    }
+
+    /* Cookie settings button */
+    #cookie-settings-btn {
+      position: fixed;
+      bottom: 20px;
+      left: 10px;
+      background: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      cursor: pointer;
+      font-size: 12px;
+      color: #666;
+      z-index: 999;
+      transition: all 0.2s;
+    }
+
+    #cookie-settings-btn:hover {
+      background: #f5f5f5;
+      color: #333;
+    }
+
+    /* Location button */
+    #location-button {
+      position: fixed;
+      bottom: 70px;
+      right: 20px;
+      width: 40px;
+      height: 40px;
+      background: white;
+      border: none;
+      border-radius: 50%;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      z-index: 1000;
+      transition: background-color 0.2s;
+    }
+
+    #location-button:hover {
+      background-color: #f5f5f5;
+    }
+
+    #location-button:active {
+      background-color: #e0e0e0;
+    }
+
+    #location-button svg {
+      width: 20px;
+      height: 20px;
+      fill: #666;
+    }
+
+    /* Simple blue location marker */
+    .user-location-marker {
+      background-color: #2196F3;
+      border: 3px solid white;
+      border-radius: 50%;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    }
+
+    /* Hide the default locate control accuracy circle */
+    .leaflet-control-locate-circle {
+      display: none;
+    }
+  </style>
+</head>
+
+<body itemscope itemtype="https://schema.org/WebApplication">
+  <!-- Schema.org structured data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Santacruztrees",
+    "description": "Mapa interactivo de los árboles de Santa Cruz de Tenerife",
+    "url": "https://santacruztrees.github.io/",
+    "applicationCategory": "MapApplication",
+    "operatingSystem": "Any",
+    "author": {
+      "@type": "Person",
+      "name": "Mario Guinda"
+    },
+    "sourceOrganization": {
+      "@type": "GovernmentOrganization",
+      "name": "Ayuntamiento de Santa Cruz de Tenerife"
+    },
+    "inLanguage": "es",
+    "about": {
+      "@type": "Thing",
+      "name": "Árboles urbanos de Santa Cruz de Tenerife"
+    }
+  }
+  </script>
+  <!-- Loading Indicator -->
+  <div id="loading-overlay">
+    <div class="spinner"></div>
+    <div class="loading-content">
+      <div id="loading-text">Cargando árboles...</div>
+      <div id="loading-progress"></div>
+    </div>
+  </div>
+
+  <!-- Map Container -->
+  <div id="map"></div>
+
+  <!-- Performance Indicator (optional, for debugging) -->
+  <div id="performance-indicator">
+    <span class="fps">--</span> visible markers
+  </div>
+
+  <!-- Info Panel -->
+  <div class="info-panel" id="info-panel">
+    <button class="close-btn" onclick="document.getElementById('info-panel').style.display='none'">&times;</button>
+    <h3><img src="android-chrome-192x192.png" alt="Árboles de Santa Cruz de Tenerife" style="width: 24px; height: 24px; margin-right: 5px;">Árboles de Santa Cruz de Tenerife</h3>
+    <p><strong>49.957 árboles</strong></p>
+    <p>Acerca el zoom para ver los árboles individuales</p>
+    <p>Haz click en un árbol para ver sus detalles</p>
+    <p style="margin-top: 10px; font-size: 12px; color: #999;">
+      Datos: Ayuntamiento de Santa Cruz de Tenerife
+    </p>
+  </div>
+
+  <!-- Location Button -->
+  <button id="location-button" aria-label="Find my location">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+    </svg>
+  </button>
+
+  <!-- Info Button -->
+  <button id="info-button" aria-label="Information">
+    <img src="resources/info-icon.svg" alt="Info">
+  </button>
+
+  <!-- Info Popup -->
+  <div id="info-popup">
+    <p><strong>Creado por Mario Guinda</strong></p>
+    <p>GNU General Public License</p>
+    <p>Basado en <a href="https://github.com/madtrees/madtrees" target="_blank" rel="noopener noreferrer">Madtrees</a></p>
+    <p><a href="https://github.com/santacruztrees/santacruztrees" target="_blank" rel="noopener noreferrer">View on GitHub →</a></p>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  
+  <!-- Leaflet MarkerCluster JS -->
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+  
+  <!-- Leaflet Locate Control JS -->
+  <script src="https://cdn.jsdelivr.net/npm/leaflet.locatecontrol@0.85.1/dist/L.Control.Locate.min.js"></script>
+  
+  <!-- Cookie Consent JS -->
+  <script src="https://cdn.jsdelivr.net/gh/orestbida/cookieconsent@3.0.1/dist/cookieconsent.umd.js"></script>
+  
+  <!-- Cookie Consent Configuration -->
+  <script>
+    // Cookie Consent Configuration
+    CookieConsent.run({
+      categories: {
+        necessary: {
+          enabled: true,
+          readOnly: true
+        },
+        analytics: {}
+      },
+      
+      language: {
+        default: 'es',
+        translations: {
+          es: {
+            consentModal: {
+              title: '🍪 Utilizamos cookies',
+              description: 'Este sitio utiliza cookies de análisis para mejorar tu experiencia y entender cómo interactúas con el mapa. Puedes aceptar todas las cookies o personalizar tu elección.',
+              acceptAllBtn: 'Aceptar todas',
+              acceptNecessaryBtn: 'Rechazar',
+              showPreferencesBtn: 'Personalizar'
+            },
+            preferencesModal: {
+              title: 'Preferencias de cookies',
+              acceptAllBtn: 'Aceptar todas',
+              acceptNecessaryBtn: 'Rechazar opcionales',
+              savePreferencesBtn: 'Guardar preferencias',
+              closeIconLabel: 'Cerrar',
+              sections: [
+                {
+                  title: 'Uso de cookies',
+                  description: 'Utilizamos cookies para analizar el uso del sitio web y mejorar tu experiencia.'
+                },
+                {
+                  title: 'Cookies necesarias',
+                  description: 'No hay ninguna cookie necesaria para el funcionamiento del sitio web.',
+                  linkedCategory: 'necessary'
+                },
+                {
+                  title: 'Cookies de análisis',
+                  description: 'Estas cookies nos ayudan a entender cómo los visitantes interactúan con el sitio web mediante Google Analytics.',
+                  linkedCategory: 'analytics'
+                },
+                {
+                  title: 'Más información',
+                  description: 'Para cualquier consulta sobre nuestra política de cookies, puedes <a href="https://github.com/santacruztrees/santacruztrees">contactarnos en GitHub</a>.'
+                }
+              ]
+            }
+          }
+        }
+      },
+      
+      onConsent: function() {
+        if (CookieConsent.acceptedCategory('analytics')) {
+          loadAnalytics();
+        }
+      },
+      
+      onChange: function() {
+        if (CookieConsent.acceptedCategory('analytics')) {
+          loadAnalytics();
+        }
+      }
+    });
+    
+    // Function to load Google Analytics
+    function loadAnalytics() {
+      if (window.gaLoaded) return;
+      window.gaLoaded = true;
+      
+      // Enable Google Analytics
+      if (typeof gtag === 'function') {
+        gtag('consent', 'update', {
+          'analytics_storage': 'granted'
+        });
+      }
+    }
+    
+    // Button to reopen cookie preferences
+    window.addEventListener('load', function() {
+      const btn = document.createElement('button');
+      btn.id = 'cookie-settings-btn';
+      btn.textContent = '🍪 Cookies';
+      btn.onclick = function() {
+        CookieConsent.showPreferences();
+      };
+      document.body.appendChild(btn);
+    });
+  </script>
+  
+  <!-- Map Script -->
+  <script src="./map.js"></script>
+</body>
+</html>
